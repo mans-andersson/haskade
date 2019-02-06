@@ -24,6 +24,13 @@ movePlayer p@(h:s:_) = newBlock:p
 movePlayers :: GameState -> GameState
 movePlayers (p1,p2) = (movePlayer p1, movePlayer p2)
 
+{-Moves the game forward if the provided millisecond value has as certain
+result in a modolo computation. This controls the pace of the game.-}
+moveGame :: GameState -> Integer-> GameState
+moveGame gs time
+  | time `mod` 500 == 0 = movePlayers gs
+  | otherwise = gs
+
 nextBlock :: PBlock -> PBlock -> PBlock
 nextBlock (PBlock d1 x1 y1) (PBlock d2 x2 y2)
   | (d1, d2) == (Game.Left, Game.Right) = PBlock d1 (x1+1) y1

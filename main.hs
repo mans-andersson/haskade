@@ -15,7 +15,7 @@ gameLoop w gs@(p1,p2) = do
     sequence (drawPlayer p2)
   render
   t <- liftIO getSystemTime
-  gameLoop w gs
+  gameLoop w (moveGame gs (getMilliSeconds t))
 
 drawChar :: Char -> Integer -> Integer -> Update ()
 drawChar ch row col = do
@@ -35,3 +35,6 @@ drawPlayer [] = []
 drawPlayer (h:t) = (drawPBlock dirChar h):(drawPlayerTail t)
   where drawPlayerTail t = map (drawPBlock '#') t
         dirChar = getDirectionChar(getDir h)
+
+getMilliSeconds :: SystemTime -> Integer
+getMilliSeconds t = round((fromIntegral(systemNanoseconds t))/1000000)
