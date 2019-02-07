@@ -1,5 +1,5 @@
 import UI.NCurses
-import Data.Time.Clock.System
+import Data.Time.Clock.POSIX
 import Control.Monad.IO.Class(liftIO)
 import Game
 
@@ -8,13 +8,14 @@ main = runCurses $ do
   gameLoop w initialGameState
 
 gameLoop :: Window -> GameState -> Curses ()
-gameLoop w gs@(p1,p2) = do
+gameLoop w gs@(p1,p2,ts) = do
   updateWindow w $ do
     sequence drawWalls
     sequence (drawPlayer p1)
     sequence (drawPlayer p2)
   render
-  t <- liftIO getSystemTime
+  t <- liftIO getPOSIXTime
+  e <- getEvent w (Just 1)
   gameLoop w (moveGame gs (getMilliSeconds t))
 
 drawChar :: Char -> Integer -> Integer -> Update ()
@@ -36,5 +37,5 @@ drawPlayer (h:t) = (drawPBlock dirChar h):(drawPlayerTail t)
   where drawPlayerTail t = map (drawPBlock '#') t
         dirChar = getDirectionChar(getDir h)
 
-getMilliSeconds :: SystemTime -> Integer
-getMilliSeconds t = round((fromIntegral(systemNanoseconds t))/1000000)
+getMilliSeconds :: POSIXTime -> Integer
+getMilliSeconds t = round $ t * 1000

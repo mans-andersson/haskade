@@ -2,13 +2,14 @@ module Game where
 
 data Direction = Left | Right | Up | Down deriving Eq
 data PBlock = PBlock {getDir :: Direction, xCoord :: Integer, yCoord :: Integer}
-type GameState = (Player, Player)
+type Timestamp = Integer
+type GameState = (Player, Player, Timestamp)
 type Player = [PBlock]
 
 rows = 50
 columns = 100
 
-initialGameState = ([PBlock Up 20 20, PBlock Up 20 21], [PBlock Up 70 20, PBlock Up 70 21])
+initialGameState = ([PBlock Up 20 20, PBlock Up 20 21], [PBlock Up 70 20, PBlock Up 70 21], 0)
 
 getDirectionChar :: Direction -> Char
 getDirectionChar Game.Left = '←'
@@ -22,13 +23,13 @@ movePlayer p@(h:s:_) = newBlock:p
         newBlock = nextBlock h s
 
 movePlayers :: GameState -> GameState
-movePlayers (p1,p2) = (movePlayer p1, movePlayer p2)
+movePlayers (p1,p2,ts) = (movePlayer p1, movePlayer p2,ts)
 
-{-Moves the game forward if the provided millisecond value has as certain
-result in a modolo computation. This controls the pace of the game.-}
+{-Moves the game forward if the time since the last update has surpassed a certain value in milliseconds.
+This controls the pace of the game.-}
 moveGame :: GameState -> Integer-> GameState
-moveGame gs time
-  | time `mod` 500 == 0 = movePlayers gs
+moveGame gs@(p1,p2,ts) time
+  | (time - ts) > 1000 = movePlayers (p1,p2,time)
   | otherwise = gs
 
 nextBlock :: PBlock -> PBlock -> PBlock
