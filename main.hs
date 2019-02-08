@@ -1,7 +1,7 @@
 import UI.NCurses
-import Data.Time.Clock.POSIX
+import Data.Time.Clock.POSIX(POSIXTime, getPOSIXTime)
 import Control.Monad.IO.Class(liftIO)
-import Data.Char
+import Data.Char(toUpper)
 import Game
 
 main = runCurses $ do
@@ -9,17 +9,24 @@ main = runCurses $ do
   w <- newWindow (rows+1) (columns+1) 0 0
   gameLoop w initialGameState
 
+{-The main gameloop!-}
 gameLoop :: Window -> GameState -> Curses ()
 gameLoop w gs@(p1,p2,ts) = do
+  {-This part renders everything.-}
   updateWindow w $ do
     sequence drawWalls
     sequence (drawPlayer p1)
     sequence (drawPlayer p2)
   render
+  {-Reads the current time from the system. We need this to control the
+    pace of the game.-}
   currenttime <- liftIO getPOSIXTime
+  {-Halts for 1 ms looking for events. If these are any relevant button
+    presses they will affect the game.-}
   e <- getEvent w (Just 1)
   gameLoop w $ updateGameState gs e currenttime
 
+{-Calls a composition of functions that changes the gamestate in some way.-}
 updateGameState :: GameState -> Maybe Event -> POSIXTime -> GameState
 updateGameState gs e ptime = (readEvent e) . (moveGame time) $ gs
   where time = getMilliSeconds ptime
@@ -43,9 +50,11 @@ drawPlayer (h:t) = (drawPBlock dirChar h):(drawPlayerTail t)
   where drawPlayerTail t = map (drawPBlock '#') t
         dirChar = getDirectionChar(getDir h)
 
-getMilliSeconds :: POSIXTime -> Integer
+getMilliSeconds :: POSIXTime -> Timestamp
 getMilliSeconds t = round $ t * 1000
 
+{-Checks if the event is a relevant button press and performs the relevant
+  action.-}
 readEvent :: Maybe Event -> GameState -> GameState
 readEvent (Just (EventCharacter k)) gs@(p1,p2,ts)
   | k `isKey` 'w' = ((changeDirection p1 Game.Up),p2,ts)

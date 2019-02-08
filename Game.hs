@@ -32,7 +32,7 @@ changeDirection (h:t) d = (PBlock d currentX currentY):t
   The position of the new PBlock is determined by the direction of the
   last one.-}
 movePlayer :: Player -> Player
-movePlayer p@(h:s:_) = newBlock:p
+movePlayer (h:s:t) = newBlock ++ t
   where dir = getDir h
         newBlock = nextBlock h s
 
@@ -46,17 +46,16 @@ moveGame time gs@(p1,p2,ts)
   | (time - ts) > 400 = movePlayers (p1,p2,time)
   | otherwise = gs
 
-{-Returns a new block based on the last 2. You need to look at the two
-previous blocks to make sure the player cannot move straight back into
+{-Creates a new block to make the player longer. The most recent block may
+need to be replaced if the player tries to move straight back into
 themselves.-}
--- Not functioning properly atm
-nextBlock :: PBlock -> PBlock -> PBlock
-nextBlock (PBlock d1 x1 y1) (PBlock d2 x2 y2)
-  | (d1, d2) == (Game.Left, Game.Right) = PBlock d2 (x1+1) y1
-  | (d1, d2) == (Game.Right, Game.Left) = PBlock d2 (x1-1) y1
-  | (d1, d2) == (Game.Up, Game.Down) = PBlock d2 x1 (y1+1)
-  | (d1, d2) == (Game.Down, Game.Up) = PBlock d2 x1 (y1-1)
-  | d1 == Game.Left = PBlock d1 (x1-1) y1
-  | d1 == Game.Right = PBlock d1 (x1+1) y1
-  | d1 == Game.Up = PBlock d1 x1 (y1-1)
-  | d1 == Game.Down = PBlock d1 x1 (y1+1)
+nextBlock :: PBlock -> PBlock -> [PBlock]
+nextBlock b1@(PBlock d1 x1 y1) b2@(PBlock d2 x2 y2)
+  | (d1, d2) == (Game.Left, Game.Right) = [PBlock d2 (x1+1) y1, PBlock d2 x1 y1]
+  | (d1, d2) == (Game.Right, Game.Left) = [PBlock d2 (x1-1) y1, PBlock d2 x1 y1]
+  | (d1, d2) == (Game.Up, Game.Down) = [PBlock d2 x1 (y1+1), PBlock d2 x1 y1]
+  | (d1, d2) == (Game.Down, Game.Up) = [PBlock d2 x1 (y1-1), PBlock d2 x1 y1]
+  | d1 == Game.Left = [PBlock d1 (x1-1) y1, b1]
+  | d1 == Game.Right = [PBlock d1 (x1+1) y1, b1]
+  | d1 == Game.Up = [PBlock d1 x1 (y1-1), b1]
+  | d1 == Game.Down = [PBlock d1 x1 (y1+1), b1]
