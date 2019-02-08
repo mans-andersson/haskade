@@ -16,9 +16,13 @@ gameLoop w gs@(p1,p2,ts) = do
     sequence (drawPlayer p1)
     sequence (drawPlayer p2)
   render
-  t <- liftIO getPOSIXTime
+  currenttime <- liftIO getPOSIXTime
   e <- getEvent w (Just 1)
-  gameLoop w $ readEvent e ((moveGame gs (getMilliSeconds t)))
+  gameLoop w $ updateGameState gs e currenttime
+
+updateGameState :: GameState -> Maybe Event -> POSIXTime -> GameState
+updateGameState gs e ptime = (readEvent e) . (moveGame time) $ gs
+  where time = getMilliSeconds ptime
 
 drawChar :: Char -> Integer -> Integer -> Update ()
 drawChar ch row col = do

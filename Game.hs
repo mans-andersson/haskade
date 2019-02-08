@@ -8,6 +8,9 @@ type Player = [PBlock]
 
 rows = 60
 columns = 60
+{-timelimit specifies how often the game will be moved forward. That is to say
+the players grow with one block. The number is defined in milliseconds.-}
+timelimit = 400
 
 initialGameState = ([PBlock Up 20 20, PBlock Up 20 21], [PBlock Up 30 20, PBlock Up 30 21], 0)
 
@@ -17,11 +20,17 @@ getDirectionChar Game.Right = '→'
 getDirectionChar Game.Up = '↑'
 getDirectionChar Game.Down = '↓'
 
+{-Changes the direction of the player by creating a new Player list where
+  the head of the list has had its direction changed to the direction specified
+  in the argument.-}
 changeDirection :: Player -> Direction -> Player
 changeDirection (h:t) d = (PBlock d currentX currentY):t
   where currentX = xCoord h
         currentY = yCoord h
 
+{-Moves the player by creating a new Player list with an added PBlock.
+  The position of the new PBlock is determined by the direction of the
+  last one.-}
 movePlayer :: Player -> Player
 movePlayer p@(h:s:_) = newBlock:p
   where dir = getDir h
@@ -30,13 +39,17 @@ movePlayer p@(h:s:_) = newBlock:p
 movePlayers :: GameState -> GameState
 movePlayers (p1,p2,ts) = (movePlayer p1, movePlayer p2,ts)
 
-{-Moves the game forward if the time since the last update has surpassed a certain value in milliseconds.
-This controls the pace of the game.-}
-moveGame :: GameState -> Integer-> GameState
-moveGame gs@(p1,p2,ts) time
+{-Moves the game forward if the time since the last update has surpassed
+a certain value in milliseconds. This controls the pace of the game.-}
+moveGame :: Timestamp -> GameState -> GameState
+moveGame time gs@(p1,p2,ts)
   | (time - ts) > 400 = movePlayers (p1,p2,time)
   | otherwise = gs
 
+{-Returns a new block based on the last 2. You need to look at the two
+previous blocks to make sure the player cannot move straight back into
+themselves.-}
+-- Not functioning properly atm
 nextBlock :: PBlock -> PBlock -> PBlock
 nextBlock (PBlock d1 x1 y1) (PBlock d2 x2 y2)
   | (d1, d2) == (Game.Left, Game.Right) = PBlock d2 (x1+1) y1
