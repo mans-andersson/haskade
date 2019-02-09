@@ -6,17 +6,18 @@ import Game
 
 main = runCurses $ do
   setEcho False
-  w <- newWindow (rows+1) (columns+1) 0 0
+  w <- newWindow (rows+1) (columns+20) 0 0
   gameLoop w initialGameState
 
 {-The main gameloop!-}
 gameLoop :: Window -> GameState -> Curses ()
-gameLoop w gs@(p1,p2,ts) = do
+gameLoop w gs@(GameState p1 p2 ts sc) = do
   {-This part renders everything.-}
   updateWindow w $ do
     sequence drawWalls
     sequence (drawPlayer p1)
     sequence (drawPlayer p2)
+    drawScores sc
   render
   {-Reads the current time from the system. We need this to control the
     pace of the game.-}
@@ -50,20 +51,27 @@ drawPlayer (h:t) = (drawPBlock dirChar h):(drawPlayerTail t)
   where drawPlayerTail t = map (drawPBlock '#') t
         dirChar = getDirectionChar(getDir h)
 
+drawScores :: Score -> Update ()
+drawScores (p1, p2) = do
+  moveCursor 2 (columns+2)
+  drawString ("Player 1: " ++ (show p1))
+  moveCursor 3 (columns+2)
+  drawString ("Player 2: " ++ (show p2))
+
 getMilliSeconds :: POSIXTime -> Timestamp
 getMilliSeconds t = round $ t * 1000
 
 {-Checks if the event is a relevant button press and performs the relevant
   action.-}
 readEvent :: Maybe Event -> GameState -> GameState
-readEvent (Just (EventCharacter k)) gs@(p1,p2,ts)
-  | k `isKey` 'w' = ((changeDirection p1 Game.Up),p2,ts)
-  | k `isKey` 'a' = ((changeDirection p1 Game.Left),p2,ts)
-  | k `isKey` 's' = ((changeDirection p1 Game.Down),p2,ts)
-  | k `isKey` 'd' = ((changeDirection p1 Game.Right),p2,ts)
-  | k `isKey` 'i' = (p1,(changeDirection p2 Game.Up),ts)
-  | k `isKey` 'j' = (p1,(changeDirection p2 Game.Left),ts)
-  | k `isKey` 'k' = (p1,(changeDirection p2 Game.Down),ts)
-  | k `isKey` 'l' = (p1,(changeDirection p2 Game.Right),ts)
+readEvent (Just (EventCharacter k)) gs@(GameState p1 p2 ts sc)
+  | k `isKey` 'w' = GameState (changeDirection p1 Game.Up) p2 ts sc
+  | k `isKey` 'a' = GameState (changeDirection p1 Game.Left) p2 ts sc
+  | k `isKey` 's' = GameState (changeDirection p1 Game.Down) p2 ts sc
+  | k `isKey` 'd' = GameState (changeDirection p1 Game.Right) p2 ts sc
+  | k `isKey` 'i' = GameState p1 (changeDirection p2 Game.Up) ts sc
+  | k `isKey` 'j' = GameState p1 (changeDirection p2 Game.Left) ts sc
+  | k `isKey` 'k' = GameState p1 (changeDirection p2 Game.Down) ts sc
+  | k `isKey` 'l' = GameState p1 (changeDirection p2 Game.Right) ts sc
     where isKey k i = k == i || k == (toUpper i)
 readEvent _ gs = gs

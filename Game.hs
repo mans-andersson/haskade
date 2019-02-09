@@ -1,10 +1,16 @@
 module Game where
 
 data Direction = Left | Right | Up | Down deriving Eq
-data PBlock = PBlock {getDir :: Direction, xCoord :: Integer, yCoord :: Integer}
+data PBlock = PBlock {getDir :: Direction,
+                      xCoord :: Integer,
+                      yCoord :: Integer}
 type Timestamp = Integer
-type GameState = (Player, Player, Timestamp)
+data GameState = GameState {getP1 :: Player,
+                            getP2 :: Player,
+                            getTs :: Timestamp,
+                            getScore :: Score}
 type Player = [PBlock]
+type Score = (Int, Int) -- (Player1, Player2)
 
 rows = 60
 columns = 60
@@ -12,7 +18,7 @@ columns = 60
 the players grow with one block. The number is defined in milliseconds.-}
 timelimit = 400
 
-initialGameState = ([PBlock Up 20 20, PBlock Up 20 21], [PBlock Up 30 20, PBlock Up 30 21], 0)
+initialGameState = GameState [PBlock Up 20 20, PBlock Up 20 21] [PBlock Up 30 20, PBlock Up 30 21] 0 (0,0)
 
 getDirectionChar :: Direction -> Char
 getDirectionChar Game.Left = '←'
@@ -37,13 +43,14 @@ movePlayer (h:s:t) = newBlock ++ t
         newBlock = nextBlock h s
 
 movePlayers :: GameState -> GameState
-movePlayers (p1,p2,ts) = (movePlayer p1, movePlayer p2,ts)
+movePlayers (GameState p1 p2 ts sc) =
+  GameState (movePlayer p1) (movePlayer p2) ts sc
 
 {-Moves the game forward if the time since the last update has surpassed
 a certain value in milliseconds. This controls the pace of the game.-}
 moveGame :: Timestamp -> GameState -> GameState
-moveGame time gs@(p1,p2,ts)
-  | (time - ts) > 400 = movePlayers (p1,p2,time)
+moveGame time gs@(GameState p1 p2 ts sc)
+  | (time - ts) > 400 = movePlayers (GameState p1 p2 time sc)
   | otherwise = gs
 
 {-Creates a new block to make the player longer. The most recent block may
