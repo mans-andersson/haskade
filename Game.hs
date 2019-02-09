@@ -1,14 +1,14 @@
 module Game where
 
-data Direction = Left | Right | Up | Down deriving Eq
+data Direction = Left | Right | Up | Down deriving (Eq,Show)
 data PBlock = PBlock {getDir :: Direction,
                       xCoord :: Integer,
-                      yCoord :: Integer}
+                      yCoord :: Integer} deriving Show
 type Timestamp = Integer
 data GameState = GameState {getP1 :: Player,
                             getP2 :: Player,
                             getTs :: Timestamp,
-                            getScore :: Score}
+                            getScore :: Score} deriving Show
 type Player = [PBlock]
 type Score = (Int, Int) -- (Player1, Player2)
 
@@ -18,7 +18,9 @@ columns = 60
 the players grow with one block. The number is defined in milliseconds.-}
 timelimit = 400
 
-initialGameState = GameState [PBlock Up 20 20, PBlock Up 20 21] [PBlock Up 30 20, PBlock Up 30 21] 0 (0,0)
+initialP1 = [PBlock Up 20 20, PBlock Up 20 21, PBlock Up 20 22]
+initialP2 = [PBlock Up 30 20, PBlock Up 30 21, PBlock Up 30 22]
+initialGameState = GameState initialP1 initialP2 0 (0,0)
 
 getDirectionChar :: Direction -> Char
 getDirectionChar Game.Left = '←'
@@ -38,7 +40,7 @@ changeDirection (h:t) d = (PBlock d currentX currentY):t
   The position of the new PBlock is determined by the direction of the
   last one.-}
 movePlayer :: Player -> Player
-movePlayer (h:s:t) = newBlock ++ t
+movePlayer (h:s:t) = newBlock ++ s:t
   where dir = getDir h
         newBlock = nextBlock h s
 
@@ -50,7 +52,7 @@ movePlayers (GameState p1 p2 ts sc) =
 a certain value in milliseconds. This controls the pace of the game.-}
 moveGame :: Timestamp -> GameState -> GameState
 moveGame time gs@(GameState p1 p2 ts sc)
-  | (time - ts) > 400 = movePlayers (GameState p1 p2 time sc)
+  | (time - ts) > 400 = updateScore . movePlayers $ (GameState p1 p2 time sc)
   | otherwise = gs
 
 {-Creates a new block to make the player longer. The most recent block may
@@ -66,3 +68,26 @@ nextBlock b1@(PBlock d1 x1 y1) b2@(PBlock d2 x2 y2)
   | d1 == Game.Right = [PBlock d1 (x1+1) y1, b1]
   | d1 == Game.Up = [PBlock d1 x1 (y1-1), b1]
   | d1 == Game.Down = [PBlock d1 x1 (y1+1), b1]
+
+{-Simply checks if two blocks have the same coordinates.-}
+blockCollision :: PBlock -> PBlock -> Bool
+blockCollision (PBlock _ x1 y1) (PBlock _ x2 y2) = x1 == x2 && y1 == y2
+
+{-Has the player in the left argument collided with the player in the right
+  argument.-}
+playerCollision :: Player -> Player -> Bool
+playerCollision (h:_) (_:t) = any (blockCollision h) t
+
+{-Returns true if players collided with each other head to head.-}
+chickenRaceCollision :: Player -> Player -> Bool
+chickenRaceCollision (h1:_) (h2:_) = blockCollision h1 h2
+
+updateScore :: GameState -> GameState
+updateScore gs@(GameState p1 p2 ts (sc1, sc2))
+  | headcoll = GameState p1 p2 ts (sc1+1,sc2+1)
+  | p1coll = GameState p1 p2 ts (sc1, sc2+1)
+  | p2coll = GameState p1 p2 ts (sc1+1, sc2)
+  | otherwise = gs
+    where headcoll = chickenRaceCollision p1 p2
+          p1coll = playerCollision p1 p2 || playerCollision p1 p1
+          p2coll = playerCollision p2 p1 || playerCollision p2 p2
