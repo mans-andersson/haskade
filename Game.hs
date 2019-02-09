@@ -1,15 +1,20 @@
 module Game where
 
 data Direction = Left | Right | Up | Down deriving (Eq,Show)
+data State = Running | Player1Coll | Player2Coll | DoubleColl | Player1Won
+  | Player2Won | Draw | Quit deriving (Show, Eq)
 data PBlock = PBlock {getDir :: Direction,
                       xCoord :: Integer,
                       yCoord :: Integer} deriving Show
-type Timestamp = Integer
-data GameState = GameState {getP1 :: Player,
+
+data GameState = GameState {getState :: State,
+                            getP1 :: Player,
                             getP2 :: Player,
                             getTs :: Timestamp,
                             getScore :: Score} deriving Show
-type Player = [PBlock]
+
+type Timestamp = Integer
+type Player = [PBlock] -- A player is a list of playerblocks
 type Score = (Int, Int) -- (Player1, Player2)
 
 rows = 60
@@ -20,7 +25,7 @@ timelimit = 400
 
 initialP1 = [PBlock Up 20 20, PBlock Up 20 21, PBlock Up 20 22]
 initialP2 = [PBlock Up 30 20, PBlock Up 30 21, PBlock Up 30 22]
-initialGameState = GameState initialP1 initialP2 0 (0,0)
+initialGameState = GameState Running initialP1 initialP2 0 (0,0)
 
 getDirectionChar :: Direction -> Char
 getDirectionChar Game.Left = '←'
@@ -45,15 +50,20 @@ movePlayer (h:s:t) = newBlock ++ s:t
         newBlock = nextBlock h s
 
 movePlayers :: GameState -> GameState
-movePlayers (GameState p1 p2 ts sc) =
-  GameState (movePlayer p1) (movePlayer p2) ts sc
+movePlayers (GameState s p1 p2 ts sc) =
+  GameState s (movePlayer p1) (movePlayer p2) ts sc
 
 {-Moves the game forward if the time since the last update has surpassed
 a certain value in milliseconds. This controls the pace of the game.-}
 moveGame :: Timestamp -> GameState -> GameState
-moveGame time gs@(GameState p1 p2 ts sc)
-  | (time - ts) > 400 = updateScore . movePlayers $ (GameState p1 p2 time sc)
+moveGame time gs
+  | (time - (getTs gs)) > 400 = checkCollision . movePlayers $ updateTime gs time
   | otherwise = gs
+
+{-Simply creates a new GameState that is exactly the same but with
+  a new timestamp.-}
+updateTime :: GameState -> Timestamp -> GameState
+updateTime (GameState s p1 p2 oldt sc) newt = GameState s p1 p2 newt sc
 
 {-Creates a new block to make the player longer. The most recent block may
 need to be replaced if the player tries to move straight back into
@@ -82,12 +92,23 @@ playerCollision (h:_) (_:t) = any (blockCollision h) t
 chickenRaceCollision :: Player -> Player -> Bool
 chickenRaceCollision (h1:_) (h2:_) = blockCollision h1 h2
 
-updateScore :: GameState -> GameState
-updateScore gs@(GameState p1 p2 ts (sc1, sc2))
-  | headcoll = GameState p1 p2 ts (sc1+1,sc2+1)
-  | p1coll = GameState p1 p2 ts (sc1, sc2+1)
-  | p2coll = GameState p1 p2 ts (sc1+1, sc2)
+checkCollision :: GameState -> GameState
+checkCollision gs
+  | headcoll = changeState DoubleColl (incrementScore 1 . incrementScore 2 $ gs)
+  | p1coll = changeState Player1Coll (incrementScore 2 gs)
+  | p2coll = changeState Player2Coll (incrementScore 1 gs)
   | otherwise = gs
     where headcoll = chickenRaceCollision p1 p2
           p1coll = playerCollision p1 p2 || playerCollision p1 p1
           p2coll = playerCollision p2 p1 || playerCollision p2 p2
+          p1 = getP1 gs
+          p2 = getP2 gs
+
+changeState :: State -> GameState -> GameState
+changeState newS (GameState oldS p1 p2 ts sc) = GameState newS p1 p2 ts sc
+
+incrementScore :: Integer -> GameState -> GameState
+incrementScore n (GameState s p1 p2 ts (sc1,sc2))
+  | n == 1 = GameState s p1 p2 ts (sc1+1,sc2)
+  | n == 2 = GameState s p1 p2 ts (sc1,sc2+1)
+  | otherwise = error "There only exists 2 players!"
