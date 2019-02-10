@@ -6,6 +6,7 @@ import Data.Time.Clock.POSIX(POSIXTime, getPOSIXTime)
 import Control.Monad.IO.Class(liftIO)
 import Data.Char(toUpper)
 import System.Exit(exitSuccess)
+import Control.Concurrent(threadDelay)
 import Game
 
 main = runCurses $ do
@@ -81,9 +82,9 @@ displayMessage m time w = do
   Used for messages.-}
 delaySeconds :: Integer -> Window -> Curses ()
 delaySeconds s w = do
-  getEvent w (Just time)
+  liftIO $ threadDelay (fromIntegral time)
   return ()
-    where time = s * 1000
+    where time = s * 1000000
 
 {-Calls a composition of functions that changes the gamestate in some way.-}
 updateGameState :: GameState -> Maybe Event -> POSIXTime -> GameState
