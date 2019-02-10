@@ -1,4 +1,6 @@
 {-Written by Måns Andersson-}
+module Main where
+
 import UI.NCurses
 import Data.Time.Clock.POSIX(POSIXTime, getPOSIXTime)
 import Control.Monad.IO.Class(liftIO)
