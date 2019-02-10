@@ -1,17 +1,17 @@
 module Game where
 
-data Direction = Left | Right | Up | Down deriving (Eq,Show)
+data Direction = Left | Right | Up | Down deriving Eq
 data State = Running | Player1Coll | Player2Coll | DoubleColl | Player1Won
-  | Player2Won | Draw | Quit deriving (Show, Eq)
+  | Player2Won | Draw | Quit deriving Eq
 data PBlock = PBlock {getDir :: Direction,
                       xCoord :: Integer,
-                      yCoord :: Integer} deriving Show
+                      yCoord :: Integer}
 
 data GameState = GameState {getState :: State,
                             getP1 :: Player,
                             getP2 :: Player,
                             getTs :: Timestamp,
-                            getScore :: Score} deriving Show
+                            getScore :: Score}
 
 type Timestamp = Integer
 type Player = [PBlock] -- A player is a list of playerblocks
@@ -93,6 +93,7 @@ playerCollision (h:_) (_:t) = any (blockCollision h) t
 chickenRaceCollision :: Player -> Player -> Bool
 chickenRaceCollision (h1:_) (h2:_) = blockCollision h1 h2
 
+{-Returns true if a player has collided with a wall.-}
 wallCollision :: Player -> Bool
 wallCollision (h:_)
   | x >= (columns-1) || x <= 0 = True
@@ -101,6 +102,7 @@ wallCollision (h:_)
     where x = xCoord h
           y = yCoord h
 
+{-Checks all the possible collisions and acts accordingly.-}
 checkCollision :: GameState -> GameState
 checkCollision gs
   | headcoll || (p1wall && p2wall) = changeState DoubleColl (incrementScore 1 . incrementScore 2 $ gs)
@@ -115,9 +117,12 @@ checkCollision gs
           p1 = getP1 gs
           p2 = getP2 gs
 
+{-Simply creates a new GameState that is exactly like the old one but
+  with a different inner state.-}
 changeState :: State -> GameState -> GameState
 changeState newS (GameState oldS p1 p2 ts sc) = GameState newS p1 p2 ts sc
 
+{-Increments the score of a specified player.-}
 incrementScore :: Integer -> GameState -> GameState
 incrementScore n (GameState s p1 p2 ts (sc1,sc2))
   | n == 1 = GameState s p1 p2 ts (sc1+1,sc2)

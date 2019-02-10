@@ -2,6 +2,7 @@ import UI.NCurses
 import Data.Time.Clock.POSIX(POSIXTime, getPOSIXTime)
 import Control.Monad.IO.Class(liftIO)
 import Data.Char(toUpper)
+import System.Exit
 import Game
 
 main = runCurses $ do
@@ -29,6 +30,7 @@ gameLoop w gs = do
   e <- getEvent w (Just 1)
   gameLoop w $ updateGameState gs e currenttime
 
+{-If a player has reached the winningScore the inner state is changed.-}
 checkWinScore :: Window -> GameState -> Curses ()
 checkWinScore w gs
   | p1score == winningScore = checkState w $ changeState Player1Won gs
@@ -36,6 +38,7 @@ checkWinScore w gs
   | otherwise = return ()
    where (p1score, p2score) = getScore gs
 
+{-Checks the inner state of the GameState and acts accordingly.-}
 checkState :: Window -> GameState -> Curses()
 checkState w gs
   | state == Running = return ()
@@ -57,8 +60,11 @@ checkState w gs
   | state == Draw = do
       displayMessage "NOBODY WON! IT IS A DRAW!" 3 w
       gameLoop w $ initialGameState
+  | state == Quit = liftIO exitSuccess
     where state = getState gs
 
+{-Displays a message on the screen for a specified amount of seconds.
+  During this time the gameplay is frozen.-}
 displayMessage :: String -> Integer -> Window -> Curses ()
 displayMessage m time w = do
   updateWindow w $ do
@@ -68,6 +74,8 @@ displayMessage m time w = do
   delaySeconds time w
   updateWindow w clear
 
+{-Uses the getEvent function in ncurses to simply delay the game.
+  Used for messages.-}
 delaySeconds :: Integer -> Window -> Curses ()
 delaySeconds s w = do
   getEvent w (Just time)
@@ -79,32 +87,9 @@ updateGameState :: GameState -> Maybe Event -> POSIXTime -> GameState
 updateGameState gs e ptime = (readEvent e) . (moveGame time) $ gs
   where time = getMilliSeconds ptime
 
-drawChar :: Char -> Integer -> Integer -> Update ()
-drawChar ch row col = do
-  moveCursor row col
-  drawString [ch]
 
-drawPBlock :: Char -> PBlock -> Update ()
-drawPBlock ch pb = drawChar ch (yCoord pb) (xCoord pb)
-
-drawWalls :: [Update ()]
-drawWalls = leftright ++ topbottom
-  where leftright = (drawChar '#') <$> [0..rows-1] <*> [0,columns-1]
-        topbottom = (drawChar '#') <$> [0,rows-1] <*> [0..columns-1]
-
-drawPlayer :: Player -> [Update ()]
-drawPlayer [] = []
-drawPlayer (h:t) = (drawPBlock dirChar h):(drawPlayerTail t)
-  where drawPlayerTail t = map (drawPBlock '#') t
-        dirChar = getDirectionChar(getDir h)
-
-drawScores :: Score -> Update ()
-drawScores (p1, p2) = do
-  moveCursor 2 (columns+2)
-  drawString ("Player 1: " ++ (show p1))
-  moveCursor 3 (columns+2)
-  drawString ("Player 2: " ++ (show p2))
-
+{-Transforms the POSIXTime timestamp to a millisecond value.
+  Used to control the pace of the game.-}
 getMilliSeconds :: POSIXTime -> Timestamp
 getMilliSeconds t = round $ t * 1000
 
@@ -120,5 +105,40 @@ readEvent (Just (EventCharacter k)) gs@(GameState s p1 p2 ts sc)
   | k `isKey` 'j' = GameState s p1 (changeDirection p2 Game.Left) ts sc
   | k `isKey` 'k' = GameState s p1 (changeDirection p2 Game.Down) ts sc
   | k `isKey` 'l' = GameState s p1 (changeDirection p2 Game.Right) ts sc
+  | k `isKey` '\ESC' = changeState Quit gs
     where isKey k i = k == i || k == (toUpper i)
 readEvent _ gs = gs
+
+{-Drawing functions.-}
+
+{-Draws a specified char at specified coordinates.-}
+drawChar :: Char -> Integer -> Integer -> Update ()
+drawChar ch row col = do
+  moveCursor row col
+  drawString [ch]
+
+{-Draws a specified char at the location of a specified PBlock.-}
+drawPBlock :: Char -> PBlock -> Update ()
+drawPBlock ch pb = drawChar ch (yCoord pb) (xCoord pb)
+
+{-Draws the walls based on the constants rows and columns in the Game module.-}
+drawWalls :: [Update ()]
+drawWalls = leftright ++ topbottom
+  where leftright = (drawChar '#') <$> [0..rows-1] <*> [0,columns-1]
+        topbottom = (drawChar '#') <$> [0,rows-1] <*> [0..columns-1]
+
+{-Draws all the PBlocks that form the Player. The head gets drawn differently
+  (as an arrow) than the rest of the Player.-}
+drawPlayer :: Player -> [Update ()]
+drawPlayer [] = []
+drawPlayer (h:t) = (drawPBlock dirChar h):(drawPlayerTail t)
+  where drawPlayerTail t = map (drawPBlock '#') t
+        dirChar = getDirectionChar(getDir h)
+
+{-Draws the scores at the right side of the playing field.-}
+drawScores :: Score -> Update ()
+drawScores (p1, p2) = do
+  moveCursor 2 (columns+2)
+  drawString ("Player 1: " ++ (show p1))
+  moveCursor 3 (columns+2)
+  drawString ("Player 2: " ++ (show p2))
