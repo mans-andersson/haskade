@@ -15,4 +15,4 @@ Clone the repository and navigate to the folder. Entering the command `runhaskel
 You can press ESC at any time to exit the game.
 
 ## Rules:
-Any time a player collides with a wall, himself or the other player. The other player gets a point. The first player to reach 5 points wins the game.
+Any time a player collides with a wall, himself or the other player, the other player gets a point. The first player to reach 5 points wins the game.

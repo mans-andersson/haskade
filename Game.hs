@@ -1,3 +1,4 @@
+{-Written by Måns Andersson-}
 module Game
        (
        -- Datatypes
