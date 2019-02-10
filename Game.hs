@@ -1,8 +1,35 @@
-module Game where
+module Game
+       (
+       -- Datatypes
+       Direction (..),
+       State (..),
+       PBlock (..),
+       GameState (..),
+       -- Synonyms,
+       Timestamp,
+       Player,
+       Score,
+       -- Constants,
+       rows,
+       columns,
+       timelimit,
+       winningScore,
+       initialP1,
+       initialP2,
+       initialGameState,
+       -- Functions,
+       getDirectionChar,
+       changeDirection,
+       moveGame,
+       changeState
+       ) where
 
 data Direction = Left | Right | Up | Down deriving Eq
+
+{-The State is a part of the GameState.-}
 data State = Running | Player1Coll | Player2Coll | DoubleColl | Player1Won
   | Player2Won | Draw | Quit deriving Eq
+
 data PBlock = PBlock {getDir :: Direction,
                       xCoord :: Integer,
                       yCoord :: Integer}

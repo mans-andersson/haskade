@@ -2,7 +2,7 @@ import UI.NCurses
 import Data.Time.Clock.POSIX(POSIXTime, getPOSIXTime)
 import Control.Monad.IO.Class(liftIO)
 import Data.Char(toUpper)
-import System.Exit
+import System.Exit(exitSuccess)
 import Game
 
 main = runCurses $ do
