@@ -20,8 +20,8 @@ gameLoop w gs = do
   {-This part renders everything.-}
   updateWindow w $ do
     sequence drawWalls
-    sequence (drawPlayer (getP1 gs))
-    sequence (drawPlayer (getP2 gs))
+    sequence (drawPlayer (getP1 gs) 'x')
+    sequence (drawPlayer (getP2 gs) 'o')
     drawScores (getScore gs)
   render
   checkWinScore w gs
@@ -133,10 +133,10 @@ drawWalls = leftright ++ topbottom
 
 {-Draws all the PBlocks that form the Player. The head gets drawn differently
   (as an arrow) than the rest of the Player.-}
-drawPlayer :: Player -> [Update ()]
-drawPlayer [] = []
-drawPlayer (h:t) = (drawPBlock dirChar h):(drawPlayerTail t)
-  where drawPlayerTail t = map (drawPBlock '#') t
+drawPlayer :: Player -> Char -> [Update ()]
+drawPlayer [] _ = []
+drawPlayer (h:t) ch = (drawPBlock dirChar h):(drawPlayerTail t)
+  where drawPlayerTail t = map (drawPBlock ch) t
         dirChar = getDirectionChar(getDir h)
 
 {-Draws the scores at the right side of the playing field.-}
