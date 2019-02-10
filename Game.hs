@@ -17,11 +17,12 @@ type Timestamp = Integer
 type Player = [PBlock] -- A player is a list of playerblocks
 type Score = (Int, Int) -- (Player1, Player2)
 
-rows = 60
-columns = 60
+rows = 50
+columns = 50
 {-timelimit specifies how often the game will be moved forward. That is to say
 the players grow with one block. The number is defined in milliseconds.-}
-timelimit = 400
+timelimit = 100
+winningScore = 5 :: Int
 
 initialP1 = [PBlock Up 20 20, PBlock Up 20 21, PBlock Up 20 22]
 initialP2 = [PBlock Up 30 20, PBlock Up 30 21, PBlock Up 30 22]
@@ -57,7 +58,7 @@ movePlayers (GameState s p1 p2 ts sc) =
 a certain value in milliseconds. This controls the pace of the game.-}
 moveGame :: Timestamp -> GameState -> GameState
 moveGame time gs
-  | (time - (getTs gs)) > 400 = checkCollision . movePlayers $ updateTime gs time
+  | (time - (getTs gs)) > timelimit = checkCollision . movePlayers $ updateTime gs time
   | otherwise = gs
 
 {-Simply creates a new GameState that is exactly the same but with
@@ -92,15 +93,25 @@ playerCollision (h:_) (_:t) = any (blockCollision h) t
 chickenRaceCollision :: Player -> Player -> Bool
 chickenRaceCollision (h1:_) (h2:_) = blockCollision h1 h2
 
+wallCollision :: Player -> Bool
+wallCollision (h:_)
+  | x >= (columns-1) || x <= 0 = True
+  | y >= (rows-1) || y <= 0 = True
+  | otherwise = False
+    where x = xCoord h
+          y = yCoord h
+
 checkCollision :: GameState -> GameState
 checkCollision gs
-  | headcoll = changeState DoubleColl (incrementScore 1 . incrementScore 2 $ gs)
-  | p1coll = changeState Player1Coll (incrementScore 2 gs)
-  | p2coll = changeState Player2Coll (incrementScore 1 gs)
+  | headcoll || (p1wall && p2wall) = changeState DoubleColl (incrementScore 1 . incrementScore 2 $ gs)
+  | p1coll || p1wall = changeState Player1Coll (incrementScore 2 gs)
+  | p2coll || p2wall = changeState Player2Coll (incrementScore 1 gs)
   | otherwise = gs
     where headcoll = chickenRaceCollision p1 p2
           p1coll = playerCollision p1 p2 || playerCollision p1 p1
           p2coll = playerCollision p2 p1 || playerCollision p2 p2
+          p1wall = wallCollision p1
+          p2wall = wallCollision p2
           p1 = getP1 gs
           p2 = getP2 gs
 

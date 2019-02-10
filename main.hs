@@ -12,7 +12,6 @@ main = runCurses $ do
 {-The main gameloop!-}
 gameLoop :: Window -> GameState -> Curses ()
 gameLoop w gs = do
-  checkState w gs
   {-This part renders everything.-}
   updateWindow w $ do
     sequence drawWalls
@@ -20,6 +19,8 @@ gameLoop w gs = do
     sequence (drawPlayer (getP2 gs))
     drawScores (getScore gs)
   render
+  checkWinScore w gs
+  checkState w gs
   {-Reads the current time from the system. We need this to control the
     pace of the game.-}
   currenttime <- liftIO getPOSIXTime
@@ -28,40 +29,50 @@ gameLoop w gs = do
   e <- getEvent w (Just 1)
   gameLoop w $ updateGameState gs e currenttime
 
+checkWinScore :: Window -> GameState -> Curses ()
+checkWinScore w gs
+  | p1score == winningScore = checkState w $ changeState Player1Won gs
+  | p2score == winningScore = checkState w $ changeState Player2Won gs
+  | otherwise = return ()
+   where (p1score, p2score) = getScore gs
+
 checkState :: Window -> GameState -> Curses()
 checkState w gs
   | state == Running = return ()
   | state == Player1Coll = do
-      displayPointMessage 2 w
+      displayMessage "PLAYER 2 GOT A POINT!" 2 w
       gameLoop w $ GameState Running initialP1 initialP2 0 (getScore gs)
   | state == Player2Coll = do
-      displayPointMessage 1 w
+      displayMessage "PLAYER 1 GOT A POINT!" 2 w
       gameLoop w $ GameState Running initialP1 initialP2 0 (getScore gs)
   | state == DoubleColl = do
-      displayPointMessage 0 w
+      displayMessage "YOU BOTH GOT A POINT!" 2 w
       gameLoop w $ GameState Running initialP1 initialP2 0 (getScore gs)
+  | state == Player1Won = do
+      displayMessage "PLAYER 1 WON THE GAME!" 3 w
+      gameLoop w $ initialGameState
+  | state == Player2Won = do
+      displayMessage "PLAYER 2 WON THE GAME!" 3 w
+      gameLoop w $ initialGameState
+  | state == Draw = do
+      displayMessage "NOBODY WON! IT IS A DRAW!" 3 w
+      gameLoop w $ initialGameState
     where state = getState gs
 
-displayPointMessage :: Integer -> Window -> Curses()
-displayPointMessage 0 w = do
+displayMessage :: String -> Integer -> Window -> Curses ()
+displayMessage m time w = do
   updateWindow w $ do
     moveCursor 10 15
-    drawString ("YOU BOTH GOT A POINT!")
+    drawString m
   render
-  delay2sec w
-  updateWindow w clear
-displayPointMessage n w = do
-  updateWindow w $ do
-    moveCursor 10 15
-    drawString ("PLAYER " ++ (show n) ++ " GOT A POINT!")
-  render
-  delay2sec w
+  delaySeconds time w
   updateWindow w clear
 
-delay2sec :: Window -> Curses ()
-delay2sec w = do
-  getEvent w (Just 2000)
+delaySeconds :: Integer -> Window -> Curses ()
+delaySeconds s w = do
+  getEvent w (Just time)
   return ()
+    where time = s * 1000
 
 {-Calls a composition of functions that changes the gamestate in some way.-}
 updateGameState :: GameState -> Maybe Event -> POSIXTime -> GameState
