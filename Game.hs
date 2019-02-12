@@ -13,6 +13,8 @@ module Game
        -- Constants,
        rows,
        columns,
+       centerX,
+       centerY,
        timelimit,
        winningScore,
        initialP1,
@@ -29,7 +31,7 @@ data Direction = Left | Right | Up | Down deriving Eq
 
 {-The State is a part of the GameState.-}
 data State = Running | Player1Coll | Player2Coll | DoubleColl | Player1Won
-  | Player2Won | Draw | Quit deriving Eq
+  | Player2Won | Draw | Quit | MainMenu deriving Eq
 
 data PBlock = PBlock {getDir :: Direction,
                       xCoord :: Integer,
@@ -47,6 +49,8 @@ type Score = (Int, Int) -- (Player1, Player2)
 
 rows = 50
 columns = 50
+centerY = rows `div` 2
+centerX = columns `div` 2
 {-timelimit specifies how often the game will be moved forward. That is to say
 the players grow with one block. The number is defined in milliseconds.-}
 timelimit = 100
@@ -54,7 +58,7 @@ winningScore = 5 :: Int
 
 initialP1 = [PBlock Up 20 20, PBlock Up 20 21, PBlock Up 20 22]
 initialP2 = [PBlock Up 30 20, PBlock Up 30 21, PBlock Up 30 22]
-initialGameState = GameState Running initialP1 initialP2 0 (0,0)
+initialGameState = GameState MainMenu initialP1 initialP2 0 (0,0)
 
 getDirectionChar :: Direction -> Char
 getDirectionChar Game.Left = '←'

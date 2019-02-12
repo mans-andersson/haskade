@@ -7,6 +7,7 @@ import Control.Monad.IO.Class(liftIO)
 import Data.Char(toUpper)
 import System.Exit(exitSuccess)
 import Control.Concurrent(threadDelay)
+import Data.List
 import Game
 
 main = runCurses $ do
@@ -17,11 +18,18 @@ main = runCurses $ do
 {-The main gameloop!-}
 gameLoop :: Window -> GameState -> Curses ()
 gameLoop w gs = do
+  red <- newColorID ColorRed ColorDefault 1
+  blue <- newColorID ColorBlue ColorDefault 2
+  white <- newColorID ColorWhite ColorDefault 3
   {-This part renders everything.-}
   updateWindow w $ do
+    setColor white
     sequence drawWalls
+    setColor red
     sequence (drawPlayer (getP1 gs) 'x')
+    setColor blue
     sequence (drawPlayer (getP2 gs) 'o')
+    setColor white
     drawScores (getScore gs)
   render
   checkWinScore w gs
@@ -33,6 +41,14 @@ gameLoop w gs = do
     presses they will affect the game.-}
   e <- getEvent w (Just 1)
   gameLoop w $ updateGameState gs e currenttime
+
+waitForSpace :: Window -> Curses ()
+waitForSpace w = loop
+  where loop = do
+        e <- getEvent w Nothing
+        case e of
+          Just (EventCharacter ' ') -> return ()
+          _ -> loop
 
 {-If a player has reached the winningScore the inner state is changed.-}
 checkWinScore :: Window -> GameState -> Curses ()
@@ -47,35 +63,51 @@ checkState :: Window -> GameState -> Curses()
 checkState w gs
   | state == Running = return ()
   | state == Player1Coll = do
-      displayMessage "PLAYER 2 GOT A POINT!" 2 w
+      drawMessage "PLAYER 2 GOT A POINT!" w
+      delaySeconds 2 w
+      updateWindow w clear
       gameLoop w $ GameState Running initialP1 initialP2 0 (getScore gs)
   | state == Player2Coll = do
-      displayMessage "PLAYER 1 GOT A POINT!" 2 w
+      drawMessage "PLAYER 1 GOT A POINT!" w
+      delaySeconds 2 w
+      updateWindow w clear
       gameLoop w $ GameState Running initialP1 initialP2 0 (getScore gs)
   | state == DoubleColl = do
-      displayMessage "YOU BOTH GOT A POINT!" 2 w
+      drawMessage "YOU BOTH GOT A POINT!" w
+      delaySeconds 2 w
+      updateWindow w clear
       gameLoop w $ GameState Running initialP1 initialP2 0 (getScore gs)
   | state == Player1Won = do
-      displayMessage "PLAYER 1 WON THE GAME!" 3 w
+      drawMessage "PLAYER 1 WON THE GAME!" w
+      delaySeconds 3 w
+      updateWindow w clear
       gameLoop w $ initialGameState
   | state == Player2Won = do
-      displayMessage "PLAYER 2 WON THE GAME!" 3 w
+      drawMessage "PLAYER 2 WON THE GAME!" w
+      delaySeconds 3 w
+      updateWindow w clear
       gameLoop w $ initialGameState
   | state == Draw = do
-      displayMessage "NOBODY WON! IT IS A DRAW!" 3 w
+      drawMessage "NOBODY WON! IT IS A DRAW!" w
+      delaySeconds 3 w
+      updateWindow w clear
       gameLoop w $ initialGameState
   | state == Quit = liftIO exitSuccess
+  | state == MainMenu = do
+      updateWindow w clear
+      drawMessage "WELCOME TO HASKADE! \n PRESS SPACE TO START" w
+      waitForSpace w
+      gameLoop w $ changeState Running gs
     where state = getState gs
 
 {-Displays a message on the screen for a specified amount of seconds.
   During this time the gameplay is frozen.-}
-displayMessage :: String -> Integer -> Window -> Curses ()
-displayMessage m time w = do
+drawMessage :: String -> Window -> Curses ()
+drawMessage m w = do
   updateWindow w $ do
-    moveCursor 10 15
+    moveCursor (centerY-5) (centerX - ((genericLength m) `div`2))
     drawString m
   render
-  delaySeconds time w
   updateWindow w clear
 
 {-Uses the getEvent function in ncurses to simply delay the game.
