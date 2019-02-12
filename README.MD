@@ -1,7 +1,8 @@
 # Haskade
 
 ## Background
-This is an implementation of the classic arcade game Blockade released by Gremlin in 1976. Here is a [video](https://www.youtube.com/watch?v=5v-0CwiabZA) that shows the original. I implemented a simple version of this game in Haskell as a school assignment.
+This is an implementation of the classic arcade game Blockade released by Gremlin in 1976. Here is a [video](https://www.youtube.com/watch?v=5v-0CwiabZA) that shows the original. I made this as a part of a school assignment for the course
+[Programming Paradigms DD1362](https://www.kth.se/social/course/DD1362/).
 
 ## Dependencies
 To run the game you need GHC and an installation of ncurses. If you have GHC installed you can run the command `cabal intsall ncurses` to get ncurses and all its dependencies.
