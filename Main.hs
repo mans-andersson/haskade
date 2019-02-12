@@ -7,7 +7,7 @@ import Control.Monad.IO.Class(liftIO)
 import Data.Char(toUpper)
 import System.Exit(exitSuccess)
 import Control.Concurrent(threadDelay)
-import Data.List
+import Data.List(genericLength)
 import Game
 
 main = runCurses $ do
@@ -21,7 +21,7 @@ gameLoop w gs = do
   red <- newColorID ColorRed ColorDefault 1
   blue <- newColorID ColorBlue ColorDefault 2
   white <- newColorID ColorWhite ColorDefault 3
-  {-This part renders everything.-}
+  {-This part renders gameplay.-}
   updateWindow w $ do
     setColor white
     sequence drawWalls
@@ -35,20 +35,13 @@ gameLoop w gs = do
   checkWinScore w gs
   checkState w gs
   {-Reads the current time from the system. We need this to control the
-    pace of the game.-}
+    pace of the game. It is possible to use liftIO since Curses is an instance
+    of the MonadIO typeclass.-}
   currenttime <- liftIO getPOSIXTime
   {-Halts for 1 ms looking for events. If these are any relevant button
     presses they will affect the game.-}
   e <- getEvent w (Just 1)
   gameLoop w $ updateGameState gs e currenttime
-
-waitForSpace :: Window -> Curses ()
-waitForSpace w = loop
-  where loop = do
-        e <- getEvent w Nothing
-        case e of
-          Just (EventCharacter ' ') -> return ()
-          _ -> loop
 
 {-If a player has reached the winningScore the inner state is changed.-}
 checkWinScore :: Window -> GameState -> Curses ()
@@ -95,20 +88,10 @@ checkState w gs
   | state == Quit = liftIO exitSuccess
   | state == MainMenu = do
       updateWindow w clear
-      drawMessage "WELCOME TO HASKADE! \n PRESS SPACE TO START" w
+      drawMessage "WELCOME TO HASKADE! PRESS SPACE TO START" w
       waitForSpace w
       gameLoop w $ changeState Running gs
     where state = getState gs
-
-{-Displays a message on the screen for a specified amount of seconds.
-  During this time the gameplay is frozen.-}
-drawMessage :: String -> Window -> Curses ()
-drawMessage m w = do
-  updateWindow w $ do
-    moveCursor (centerY-5) (centerX - ((genericLength m) `div`2))
-    drawString m
-  render
-  updateWindow w clear
 
 {-Uses the getEvent function in ncurses to simply delay the game.
   Used for messages.-}
@@ -118,11 +101,20 @@ delaySeconds s w = do
   return ()
     where time = s * 1000000
 
+{-Loops until spacebar is pressed. If esc is pressed the game exits.-}
+waitForSpace :: Window -> Curses ()
+waitForSpace w = loop
+  where loop = do
+        e <- getEvent w Nothing
+        case e of
+          Just (EventCharacter ' ') -> return ()
+          Just (EventCharacter '\ESC') -> liftIO exitSuccess
+          _ -> loop
+
 {-Calls a composition of functions that changes the gamestate in some way.-}
 updateGameState :: GameState -> Maybe Event -> POSIXTime -> GameState
 updateGameState gs e ptime = (readEvent e) . (moveGame time) $ gs
   where time = getMilliSeconds ptime
-
 
 {-Transforms the POSIXTime timestamp to a millisecond value.
   Used to control the pace of the game.-}
@@ -146,6 +138,15 @@ readEvent (Just (EventCharacter k)) gs@(GameState s p1 p2 ts sc)
 readEvent _ gs = gs
 
 {-Drawing functions.-}
+
+{-Draws a string at the center of the game area.-}
+drawMessage :: String -> Window -> Curses ()
+drawMessage m w = do
+  updateWindow w $ do
+    moveCursor (centerY-5) (centerX - ((genericLength m) `div`2))
+    drawString m
+  render
+  updateWindow w clear
 
 {-Draws a specified char at specified coordinates.-}
 drawChar :: Char -> Integer -> Integer -> Update ()
