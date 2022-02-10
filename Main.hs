@@ -87,9 +87,9 @@ checkState w gs
       gameLoop w $ initialGameState
   | state == Quit = liftIO exitSuccess
   | state == MainMenu = do
-      updateWindow w clear
       drawMessage "WELCOME TO HASKADE! PRESS SPACE TO START" w
       waitForSpace w
+      updateWindow w clear
       gameLoop w $ changeState Running gs
     where state = getState gs
 
@@ -146,7 +146,7 @@ drawMessage m w = do
     moveCursor (centerY-5) (centerX - ((genericLength m) `div`2))
     drawString m
   render
-  updateWindow w clear
+  -- updateWindow w clear
 
 {-Draws a specified char at specified coordinates.-}
 drawChar :: Char -> Integer -> Integer -> Update ()
