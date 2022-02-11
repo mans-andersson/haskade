@@ -21,4 +21,4 @@ Any time a player collides with a wall, himself or the other player, the other p
 Video: https://youtu.be/Tu2WTAAoz8s
 
 ### Screenshot
-![Screenshot from the game](screenshot.png)
+<img src="screenshot.png" alt="Screenshot from the game" width="50%"/>
