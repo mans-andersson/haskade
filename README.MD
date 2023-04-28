@@ -19,6 +19,4 @@ Any time a player collides with a wall, himself or the other player, the other p
 
 ## Gameplay
 Video: https://youtu.be/Tu2WTAAoz8s
-
-### Screenshot
-<img src="screenshot.png" alt="Screenshot from the game" width="50%"/>
+![Gameplay gif](images/haskade.gif)
