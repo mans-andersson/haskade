@@ -2,6 +2,7 @@
 
 ## Gameplay
 Video: https://youtu.be/Tu2WTAAoz8s
+
 ![Gameplay gif](images/haskade.gif)
 
 ## Background
